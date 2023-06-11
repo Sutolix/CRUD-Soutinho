@@ -5,25 +5,33 @@ interface Todo {
     done: boolean;
 }
 
-interface todoRepositoryGetParams {
+interface TodoRepositoryGetParams {
     page: number;
     limit: number;
 }
 
-interface todoRepositoryGetOutput {
+interface TodoRepositoryGetOutput {
     todos: Todo[];
     total: number;
     pages: number;
 }
 
-function parseTodosFromServer(responseBody: unknown): { todos: Array<Todo> } {
+function parseTodosFromServer(responseBody: unknown): {
+    total: number;
+    pages: number;
+    todos: Array<Todo>;
+} {
     if (
         responseBody !== null &&
         typeof responseBody === "object" &&
+        "total" in responseBody &&
+        "pages" in responseBody &&
         "todos" in responseBody &&
         Array.isArray(responseBody.todos)
     ) {
         return {
+            total: Number(responseBody.total),
+            pages: Number(responseBody.pages),
             todos: responseBody.todos.map((todo: unknown) => {
                 if (todo === null && typeof todo !== "object") {
                     throw new Error("Invalid todo from API");
@@ -47,6 +55,8 @@ function parseTodosFromServer(responseBody: unknown): { todos: Array<Todo> } {
     }
 
     return {
+        total: 0,
+        pages: 1,
         todos: [],
     };
 }
@@ -54,20 +64,14 @@ function parseTodosFromServer(responseBody: unknown): { todos: Array<Todo> } {
 function get({
     page,
     limit,
-}: todoRepositoryGetParams): Promise<todoRepositoryGetOutput> {
-    return fetch("/api/todos").then(async (res) => {
-        const data = parseTodosFromServer(await res.json());
-
-        const ALL_TODOS = data.todos;
-        const startIndex = (page - 1) * limit;
-        const endIndex = page * limit;
-        const paginatedTodos = ALL_TODOS.slice(startIndex, endIndex);
-        const totalPages = Math.ceil(ALL_TODOS.length / limit);
+}: TodoRepositoryGetParams): Promise<TodoRepositoryGetOutput> {
+    return fetch(`/api/todos?page=${page}&limit=${limit}`).then(async (res) => {
+        const responseParsed = parseTodosFromServer(await res.json());
 
         return {
-            todos: paginatedTodos,
-            total: paginatedTodos.length,
-            pages: totalPages,
+            total: responseParsed.total,
+            todos: responseParsed.todos,
+            pages: responseParsed.pages,
         };
     });
 }
