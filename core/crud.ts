@@ -101,6 +101,7 @@ function CLEAR_DB() {
 // const secondTodo = create("Segunda TODO");
 // deleteById(secondTodo.id);
 // const thirdTodo = create("Terceira TODO");
+// const fourthTodo = create("Quarta TODO");
 // update(thirdTodo.id, {
 //     content: "Hello World",
 //     done: true,
