@@ -1,7 +1,8 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { GlobalStyles } from "@ui/theme/GlobalStyles";
 import { todoController } from "@ui/controller/todo";
 
+// const bg = "https://mariosouto.com/cursos/crudcomqualidade/bg";
 const bg = "/bg.jpeg"; // inside public folder
 
 interface HomeTodo {
@@ -9,24 +10,37 @@ interface HomeTodo {
     content: string;
 }
 
-export default function Page() {
+function HomePage() {
+    const [initialLoadComplete, setInitialLoadComplete] = React.useState(false);
     const [totalPages, setTotalPages] = React.useState(0);
     const [page, setPage] = React.useState(1);
+    const [isLoading, setIsLoading] = React.useState(true);
     const [todos, setTodos] = React.useState<HomeTodo[]>([]);
     const hasMorePages = totalPages > page;
+    const hasNoTodos = todos.length === 0 && !isLoading;
 
+    // Load infos onload
+    // - React.useEffect(() => {}, [])
+    // -- Roda só no LOAD da página
+    // -- Roda no LOAD do componente
     React.useEffect(() => {
-        todoController.get({ page }).then(({ todos, pages }) => {
-            setTodos((oldTodos) => {
-                return [...oldTodos, ...todos];
-            });
-            setTotalPages(pages);
-        });
-    }, [page]);
+        setInitialLoadComplete(true);
+        if (!initialLoadComplete) {
+            todoController
+                .get({ page })
+                .then(({ todos, pages }) => {
+                    setTodos(todos);
+                    setTotalPages(pages);
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
+        }
+    }, []);
 
     return (
         <main>
-            <GlobalStyles themeName="coolGrey" />
+            <GlobalStyles themeName="devsoutinho" />
             <header
                 style={{
                     backgroundImage: `url('${bg}')`,
@@ -81,21 +95,25 @@ export default function Page() {
                             );
                         })}
 
-                        {/* <tr>
-                            <td
-                                colSpan={4}
-                                align="center"
-                                style={{ textAlign: "center" }}
-                            >
-                                Carregando...
-                            </td>
-                        </tr> */}
+                        {isLoading && (
+                            <tr>
+                                <td
+                                    colSpan={4}
+                                    align="center"
+                                    style={{ textAlign: "center" }}
+                                >
+                                    Carregando...
+                                </td>
+                            </tr>
+                        )}
 
-                        {/* <tr>
-                            <td colSpan={4} align="center">
-                                Nenhum item encontrado
-                            </td>
-                        </tr> */}
+                        {hasNoTodos && (
+                            <tr>
+                                <td colSpan={4} align="center">
+                                    Nenhum item encontrado
+                                </td>
+                            </tr>
+                        )}
 
                         {hasMorePages && (
                             <tr>
@@ -106,7 +124,26 @@ export default function Page() {
                                 >
                                     <button
                                         data-type="load-more"
-                                        onClick={() => setPage(page + 1)}
+                                        onClick={() => {
+                                            setIsLoading(true);
+                                            const nextPage = page + 1;
+                                            setPage(nextPage);
+
+                                            todoController
+                                                .get({ page: nextPage })
+                                                .then(({ todos, pages }) => {
+                                                    setTodos((oldTodos) => {
+                                                        return [
+                                                            ...oldTodos,
+                                                            ...todos,
+                                                        ];
+                                                    });
+                                                    setTotalPages(pages);
+                                                })
+                                                .finally(() => {
+                                                    setIsLoading(false);
+                                                });
+                                        }}
                                     >
                                         Página {page}, Carregar mais{" "}
                                         <span
@@ -128,3 +165,5 @@ export default function Page() {
         </main>
     );
 }
+
+export default HomePage;
