@@ -14,7 +14,7 @@ async function get(params: TodoControllerGetParams) {
 function filterTodosByContent<Todo>(
     todos: Array<Todo & { content: string }>,
     search: string
-): Todo[] {
+): Array<Todo> {
     const homeTodos = todos.filter((todo) => {
         const searchNormalized = search.toLocaleLowerCase();
         const contentNormalized = todo.content.toLocaleLowerCase();
